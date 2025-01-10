@@ -1,125 +1,124 @@
+public class MaskProcessor {
 
-public class PreenchimentoMascara {
+    // Main method to process the mask
+    public static String processMask(String mask, Map<String, String> queries) {
+        // 1. Execute queries and fetch records
+        Map<String, List<SObject>> recordsByObject = executeQueries(queries);
 
-    // Método principal para processar a máscara
-    public static String preencherMascara(String mascara, Map<String, String> queries) {
-        // 1. Executar queries e obter registros
-        Map<String, List<SObject>> registrosPorObjeto = executarQueries(queries);
+        // 2. Process the mask with the fetched records
+        mask = processLoops(mask, recordsByObject);
+        mask = processPlaceholders(mask, recordsByObject);
+        mask = evaluateConditionals(mask, recordsByObject);
 
-        // 2. Processar a máscara com os registros obtidos
-        mascara = processarLoops(mascara, registrosPorObjeto);
-        mascara = processarPlaceholders(mascara, registrosPorObjeto);
-        mascara = avaliarCondicionais(mascara, registrosPorObjeto);
-
-        return mascara;
+        return mask;
     }
 
-    // Executa as queries fornecidas
-    private static Map<String, List<SObject>> executarQueries(Map<String, String> queries) {
-        Map<String, List<SObject>> registrosPorObjeto = new Map<String, List<SObject>>();
+    // Executes the provided queries
+    private static Map<String, List<SObject>> executeQueries(Map<String, String> queries) {
+        Map<String, List<SObject>> recordsByObject = new Map<String, List<SObject>>();
 
-        for (String objeto : queries.keySet()) {
-            String query = queries.get(objeto);
-            registrosPorObjeto.put(objeto, Database.query(query));
+        for (String objectName : queries.keySet()) {
+            String query = queries.get(objectName);
+            recordsByObject.put(objectName, Database.query(query));
         }
 
-        return registrosPorObjeto;
+        return recordsByObject;
     }
 
-    // Substitui placeholders simples na máscara
-    private static String processarPlaceholders(String mascara, Map<String, List<SObject>> registrosPorObjeto) {
-        for (String objeto : registrosPorObjeto.keySet()) {
-            for (SObject registro : registrosPorObjeto.get(objeto)) {
-                for (Schema.SObjectField campo : registro.getSObjectType().getDescribe().fields.getMap().values()) {
-                    String campoNome = campo.getDescribe().getName();
-                    String valorCampo = registro.get(campoNome) != null ? String.valueOf(registro.get(campoNome)) : '';
-                    mascara = mascara.replace('{' + objeto + '.' + campoNome + '}', valorCampo);
+    // Replaces simple placeholders in the mask
+    private static String processPlaceholders(String mask, Map<String, List<SObject>> recordsByObject) {
+        for (String objectName : recordsByObject.keySet()) {
+            for (SObject record : recordsByObject.get(objectName)) {
+                for (Schema.SObjectField field : record.getSObjectType().getDescribe().fields.getMap().values()) {
+                    String fieldName = field.getDescribe().getName();
+                    String fieldValue = record.get(fieldName) != null ? String.valueOf(record.get(fieldName)) : '';
+                    mask = mask.replace('{' + objectName + '.' + fieldName + '}', fieldValue);
                 }
             }
         }
-        return mascara;
+        return mask;
     }
 
-    // Processa loops definidos na máscara
-    private static String processarLoops(String mascara, Map<String, List<SObject>> registrosPorObjeto) {
+    // Processes loops defined in the mask
+    private static String processLoops(String mask, Map<String, List<SObject>> recordsByObject) {
         Pattern loopRegex = Pattern.compile('\\{#(\\w+):(\\{.+?\\})\\}');
-        Matcher matcher = loopRegex.matcher(mascara);
+        Matcher matcher = loopRegex.matcher(mask);
 
         while (matcher.find()) {
-            String objeto = matcher.group(1).trim();
-            String bloco = matcher.group(2).trim();
+            String objectName = matcher.group(1).trim();
+            String block = matcher.group(2).trim();
 
-            if (!registrosPorObjeto.containsKey(objeto)) {
-                mascara = mascara.replace(matcher.group(0), '');
+            if (!recordsByObject.containsKey(objectName)) {
+                mask = mask.replace(matcher.group(0), '');
                 continue;
             }
 
-            StringBuilder resultadoLoop = new StringBuilder();
-            for (SObject registro : registrosPorObjeto.get(objeto)) {
-                String blocoProcessado = bloco;
-                for (Schema.SObjectField campo : registro.getSObjectType().getDescribe().fields.getMap().values()) {
-                    String campoNome = campo.getDescribe().getName();
-                    String valorCampo = registro.get(campoNome) != null ? String.valueOf(registro.get(campoNome)) : '';
-                    blocoProcessado = blocoProcessado.replace('{' + objeto + '.' + campoNome + '}', valorCampo);
+            StringBuilder loopResult = new StringBuilder();
+            for (SObject record : recordsByObject.get(objectName)) {
+                String processedBlock = block;
+                for (Schema.SObjectField field : record.getSObjectType().getDescribe().fields.getMap().values()) {
+                    String fieldName = field.getDescribe().getName();
+                    String fieldValue = record.get(fieldName) != null ? String.valueOf(record.get(fieldName)) : '';
+                    processedBlock = processedBlock.replace('{' + objectName + '.' + fieldName + '}', fieldValue);
                 }
-                resultadoLoop.append(blocoProcessado).append(',');
+                loopResult.append(processedBlock).append(',');
             }
 
-            if (resultadoLoop.length() > 0 && resultadoLoop.charAt(resultadoLoop.length() - 1) == ',') {
-                resultadoLoop.deleteCharAt(resultadoLoop.length() - 1);
+            if (loopResult.length() > 0 && loopResult.charAt(loopResult.length() - 1) == ',') {
+                loopResult.deleteCharAt(loopResult.length() - 1);
             }
 
-            mascara = mascara.replace(matcher.group(0), resultadoLoop.toString());
+            mask = mask.replace(matcher.group(0), loopResult.toString());
         }
 
-        return mascara;
+        return mask;
     }
 
-    // Avalia e processa condicionais
-    private static String avaliarCondicionais(String mascara, Map<String, List<SObject>> registrosPorObjeto) {
-        Pattern condicionalRegex = Pattern.compile('\\{\\?([^:]+):(\\{.+?\\})\\}');
-        Matcher matcher = condicionalRegex.matcher(mascara);
+    // Evaluates and processes conditionals
+    private static String evaluateConditionals(String mask, Map<String, List<SObject>> recordsByObject) {
+        Pattern conditionalRegex = Pattern.compile('\\{\\?([^:]+):(\\{.+?\\})\\}');
+        Matcher matcher = conditionalRegex.matcher(mask);
 
         while (matcher.find()) {
-            String condicao = matcher.group(1).trim();
-            String bloco = matcher.group(2).trim();
+            String condition = matcher.group(1).trim();
+            String block = matcher.group(2).trim();
 
-            boolean resultadoCondicao = false;
+            boolean conditionResult = false;
 
-            for (String objeto : registrosPorObjeto.keySet()) {
-                for (SObject registro : registrosPorObjeto.get(objeto)) {
-                    resultadoCondicao = avaliarCondicao(condicao, registro);
-                    if (resultadoCondicao) {
+            for (String objectName : recordsByObject.keySet()) {
+                for (SObject record : recordsByObject.get(objectName)) {
+                    conditionResult = evaluateCondition(condition, record);
+                    if (conditionResult) {
                         break;
                     }
                 }
             }
 
-            mascara = resultadoCondicao ? mascara.replace(matcher.group(0), bloco) : mascara.replace(matcher.group(0), '');
+            mask = conditionResult ? mask.replace(matcher.group(0), block) : mask.replace(matcher.group(0), '');
         }
 
-        return mascara;
+        return mask;
     }
 
-    // Avalia uma condição individual
-    private static Boolean avaliarCondicao(String condicao, SObject registro) {
-        List<String> partes;
+    // Evaluates an individual condition
+    private static Boolean evaluateCondition(String condition, SObject record) {
+        List<String> parts;
 
-        if (condicao.contains('=')) {
-            partes = condicao.split('=');
-        } else if (condicao.contains('!=')) {
-            partes = condicao.split('!=');
+        if (condition.contains('=')) {
+            parts = condition.split('=');
+        } else if (condition.contains('!=')) {
+            parts = condition.split('!=');
         } else {
-            throw new IllegalArgumentException('Condicional mal formada: ' + condicao);
+            throw new IllegalArgumentException('Malformed condition: ' + condition);
         }
 
-        String campo = partes[0].trim();
-        String valorEsperado = partes[1].trim().replace('\'', '');
-        Object valorReal = registro.get(campo);
+        String fieldName = parts[0].trim();
+        String expectedValue = parts[1].trim().replace('\'', '');
+        Object actualValue = record.get(fieldName);
 
-        if (condicao.contains('!=')) {
-            return !String.valueOf(valorEsperado).equals(String.valueOf(valorReal));
+        if (condition.contains('!=')) {
+            return !String.valueOf(expectedValue).equals(String.valueOf(actualValue));
         }
-        return String.valueOf(valorEsperado).equals(String.valueOf(valorReal));
+        return String.valueOf(expectedValue).equals(String.valueOf(actualValue));
     }
 }

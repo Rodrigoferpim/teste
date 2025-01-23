@@ -1,31 +1,16 @@
- /**
-     * Método principal para processar regras baseadas em metadados.
-     */
-    public static void processRules(SObject record) {
-        String objectName = record.getSObjectType().getDescribe().getName();
-
-        // Consulta ao metadado para obter regras ativas
-        List<CustomMetadata__mdt> rules = [
-            SELECT Nome_da_Regra__c, Condicao__c, Processamento__c, Ativo__c
-            FROM CustomMetadata__mdt
-            WHERE Objeto__c = :objectName AND Ativo__c = true
-        ];
-
-        for (CustomMetadata__mdt rule : rules) {
-            if (evaluateCondition(rule.Condicao__c, record)) {
-                executeProcessing(rule.Processamento__c, record);
-            }
-        }
-    }
-
-    /**
+/**
      * Avalia uma condição dinâmica.
      */
     private static Boolean evaluateCondition(String condition, SObject record) {
         Map<String, Object> recordValues = extractFieldValues(record);
 
-        // Avaliar a expressão condicional
-        return evaluateLogicalExpression(condition, recordValues);
+        // Identificar se a condição é simples ou complexa
+        if (isSimpleCondition(condition)) {
+            return evaluateSimpleCondition(condition, recordValues);
+        } else {
+            // Avaliar a expressão condicional complexa
+            return evaluateLogicalExpression(condition, recordValues);
+        }
     }
 
     /**
@@ -37,6 +22,32 @@
             fieldValues.put(field, record.get(field));
         }
         return fieldValues;
+    }
+
+    /**
+     * Identifica se a condição é simples (ex.: "Field = Value").
+     */
+    private static Boolean isSimpleCondition(String condition) {
+        // Uma condição simples não deve conter operadores lógicos ou parênteses
+        return !condition.contains('AND') && !condition.contains('OR') && !condition.contains('(') && !condition.contains(')');
+    }
+
+    /**
+     * Avalia uma condição simples (exemplo: "Field = Value").
+     */
+    private static Boolean evaluateSimpleCondition(String condition, Map<String, Object> recordValues) {
+        List<String> parts;
+
+        // Suporte para operadores =, !=
+        if (condition.contains('=')) {
+            parts = condition.split('=');
+            return recordValues.get(parts[0].trim()) == parts[1].trim().replaceAll("'", '');
+        } else if (condition.contains('!=')) {
+            parts = condition.split('!=');
+            return recordValues.get(parts[0].trim()) != parts[1].trim().replaceAll("'", '');
+        }
+
+        return false;
     }
 
     /**
@@ -90,35 +101,4 @@
         }
 
         return Boolean.valueOf(expression);
-    }
-
-    /**
-     * Avalia uma condição simples (exemplo: "Field = Value").
-     */
-    private static Boolean evaluateSimpleCondition(String condition, Map<String, Object> recordValues) {
-        List<String> parts;
-
-        // Suporte para operadores =, !=
-        if (condition.contains('=')) {
-            parts = condition.split('=');
-            return recordValues.get(parts[0].trim()) == parts[1].trim().replaceAll("'", '');
-        } else if (condition.contains('!=')) {
-            parts = condition.split('!=');
-            return recordValues.get(parts[0].trim()) != parts[1].trim().replaceAll("'", '');
-        }
-
-        return false;
-    }
-
-    /**
-     * Executa o processamento definido no metadado.
-     */
-    private static void executeProcessing(String processingClass, SObject record) {
-        if (!String.isBlank(processingClass)) {
-            Type processorType = Type.forName(processingClass);
-            if (processorType != null) {
-                Object processorInstance = processorType.newInstance();
-                processorType.getMethod('execute', new List<Type>{SObject.class}).invoke(processorInstance, new List<Object>{record});
-            }
-        }
     }

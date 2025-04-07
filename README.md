@@ -1,104 +1,58 @@
-/**
-     * Avalia uma condição dinâmica.
-     */
-    private static Boolean evaluateCondition(String condition, SObject record) {
-        Map<String, Object> recordValues = extractFieldValues(record);
+public class PropertyOwnerGrouper {
 
-        // Identificar se a condição é simples ou complexa
-        if (isSimpleCondition(condition)) {
-            return evaluateSimpleCondition(condition, recordValues);
-        } else {
-            // Avaliar a expressão condicional complexa
-            return evaluateLogicalExpression(condition, recordValues);
+    public class Owner {
+        public String name;
+        public String cpfCnpj;
+
+        public Owner(String name, String cpfCnpj) {
+            this.name = name != null ? name.trim() : '';
+            this.cpfCnpj = cpfCnpj != null ? cpfCnpj.trim() : '';
+        }
+
+        public String getKey() {
+            return name + '|' + cpfCnpj;
         }
     }
 
-    /**
-     * Extrai os valores dos campos do registro.
-     */
-    private static Map<String, Object> extractFieldValues(SObject record) {
-        Map<String, Object> fieldValues = new Map<String, Object>();
-        for (String field : record.getSObjectType().getDescribe().fields.getMap().keySet()) {
-            fieldValues.put(field, record.get(field));
-        }
-        return fieldValues;
-    }
+    public static Map<String, List<Property__c>> groupByOwner(List<Property__c> properties) {
+        Map<String, List<Property__c>> grouped = new Map<String, List<Property__c>>();
 
-    /**
-     * Identifica se a condição é simples (ex.: "Field = Value").
-     */
-    private static Boolean isSimpleCondition(String condition) {
-        // Uma condição simples não deve conter operadores lógicos ou parênteses
-        return !condition.contains('AND') && !condition.contains('OR') && !condition.contains('(') && !condition.contains(')');
-    }
+        for (Property__c property : properties) {
+            List<String> names = cleanAndSplit(property.Owner_Names__c);
+            List<String> documents = cleanAndSplit(property.Owner_Documents__c);
 
-    /**
-     * Avalia uma condição simples (exemplo: "Field = Value").
-     */
-    private static Boolean evaluateSimpleCondition(String condition, Map<String, Object> recordValues) {
-        List<String> parts;
+            Integer count = Math.min(names.size(), documents.size());
+            List<String> ownerKeys = new List<String>();
 
-        // Suporte para operadores =, !=
-        if (condition.contains('=')) {
-            parts = condition.split('=');
-            return recordValues.get(parts[0].trim()) == parts[1].trim().replaceAll("'", '');
-        } else if (condition.contains('!=')) {
-            parts = condition.split('!=');
-            return recordValues.get(parts[0].trim()) != parts[1].trim().replaceAll("'", '');
+            for (Integer i = 0; i < count; i++) {
+                Owner owner = new Owner(names[i], documents[i]);
+                ownerKeys.add(owner.getKey());
+            }
+
+            // Sort the keys to make the grouping order-independent
+            ownerKeys.sort();
+            String uniqueGroupKey = String.join(ownerKeys, ';');
+
+            if (!grouped.containsKey(uniqueGroupKey)) {
+                grouped.put(uniqueGroupKey, new List<Property__c>());
+            }
+            grouped.get(uniqueGroupKey).add(property);
         }
 
-        return false;
+        return grouped;
     }
 
-    /**
-     * Avalia expressões lógicas, incluindo operadores AND, OR, e parênteses.
-     */
-    private static Boolean evaluateLogicalExpression(String expression, Map<String, Object> recordValues) {
-        expression = expression.replaceAll('\\s+', ' '); // Remover espaços extras
+    private static List<String> cleanAndSplit(String raw) {
+        if (String.isBlank(raw)) return new List<String>();
 
-        // Resolver parênteses primeiro
-        while (expression.contains('(')) {
-            expression = resolveParentheses(expression, recordValues);
+        List<String> parts = raw.split('/');
+        List<String> cleaned = new List<String>();
+
+        for (String part : parts) {
+            String value = part != null ? part.trim() : '';
+            if (!String.isBlank(value)) cleaned.add(value);
         }
 
-        // Resolver operadores AND e OR
-        return resolveOperators(expression, recordValues);
+        return cleaned;
     }
-
-    /**
-     * Resolve expressões dentro de parênteses.
-     */
-    private static String resolveParentheses(String expression, Map<String, Object> recordValues) {
-        Pattern pattern = Pattern.compile('\\(([^()]+)\\)');
-        Matcher matcher = pattern.matcher(expression);
-
-        while (matcher.find()) {
-            String innerExpression = matcher.group(1);
-            Boolean result = resolveOperators(innerExpression, recordValues);
-            expression = expression.replace('(' + innerExpression + ')', String.valueOf(result));
-        }
-        return expression;
-    }
-
-    /**
-     * Resolve operadores lógicos AND e OR.
-     */
-    private static Boolean resolveOperators(String expression, Map<String, Object> recordValues) {
-        // Resolver operadores AND primeiro
-        while (expression.contains('AND')) {
-            List<String> parts = expression.split('AND', 2);
-            Boolean left = evaluateSimpleCondition(parts[0].trim(), recordValues);
-            Boolean right = evaluateSimpleCondition(parts[1].trim(), recordValues);
-            expression = expression.replace(parts[0] + ' AND ' + parts[1], String.valueOf(left && right));
-        }
-
-        // Resolver operadores OR
-        while (expression.contains('OR')) {
-            List<String> parts = expression.split('OR', 2);
-            Boolean left = evaluateSimpleCondition(parts[0].trim(), recordValues);
-            Boolean right = evaluateSimpleCondition(parts[1].trim(), recordValues);
-            expression = expression.replace(parts[0] + ' OR ' + parts[1], String.valueOf(left || right));
-        }
-
-        return Boolean.valueOf(expression);
-    }
+}

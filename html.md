@@ -1,47 +1,53 @@
 <template>
-    <lightning-card title="Modern Data List" icon-name="standard:list">
-        <!-- Search and Filter Section -->
-        <div slot="actions">
-            <lightning-button-group>
-                <lightning-button 
-                    variant="neutral" 
-                    label="Refresh" 
+    <lightning-card title={cardTitle} icon-name={cardIcon}>
+        <div slot="actions" class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+            <!-- List View Selector -->
+            <div class="slds-col slds-size_1-of-2 slds-medium-size_1-of-4">
+                <lightning-combobox
+                    name="listView"
+                    value={selectedListView}
+                    options={listViewOptions}
+                    onchange={handleListViewChange}
+                    variant="label-hidden"
+                    label="List View Selection">
+                </lightning-combobox>
+            </div>
+
+            <!-- Search and Action Buttons -->
+            <div class="slds-col slds-size_1-of-2 slds-medium-size_3-of-4 slds-text-align_right">
+                <lightning-input
+                    type="search"
+                    placeholder="Search this list..."
+                    value={searchTerm}
+                    onchange={handleSearch}
+                    variant="label-hidden"
+                    label="Search">
+                </lightning-input>
+                <lightning-button-icon 
+                    icon-name="utility:filterList"
+                    alternative-text="Filter List"
+                    title="Filter List"
+                    onclick={handleFilterClick}
+                    class="slds-m-left_x-small">
+                </lightning-button-icon>
+                <lightning-button-icon 
                     icon-name="utility:refresh"
-                    onclick={handleRefresh}>
-                </lightning-button>
+                    alternative-text="Refresh"
+                    title="Refresh"
+                    onclick={handleRefresh}
+                    class="slds-m-left_x-small">
+                </lightning-button-icon>
                 <lightning-button 
                     variant="brand" 
                     label="New" 
                     icon-name="utility:add"
-                    onclick={handleNew}>
+                    onclick={handleNew}
+                    class="slds-m-left_x-small">
                 </lightning-button>
-            </lightning-button-group>
+            </div>
         </div>
 
         <div class="slds-card__body slds-card__body_inner">
-            <!-- Search Bar -->
-            <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                    <lightning-input
-                        type="search"
-                        label="Search"
-                        placeholder="Search records..."
-                        value={searchTerm}
-                        onchange={handleSearch}>
-                    </lightning-input>
-                </div>
-                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                    <lightning-combobox
-                        name="sortBy"
-                        label="Sort By"
-                        value={sortBy}
-                        placeholder="Select sort field"
-                        options={sortOptions}
-                        onchange={handleSortChange}>
-                    </lightning-combobox>
-                </div>
-            </div>
-
             <!-- Loading Spinner -->
             <template if:true={isLoading}>
                 <div class="slds-align_absolute-center slds-m-vertical_large">

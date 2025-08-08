@@ -27,12 +27,35 @@
     border-color: var(--lwc-colorBorderBrandPrimary, #0176d3);
 }
 
-/* Container Styles */
+/* Container Styles - Enhanced for Infinite Scroll */
 .modern-list-container {
     background: var(--lwc-colorBackgroundAlt, #fafaf9);
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-height: 70vh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar for Infinite Scroll */
+.modern-list-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modern-list-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modern-list-container::-webkit-scrollbar-thumb {
+    background: #c1c7d0;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.modern-list-container::-webkit-scrollbar-thumb:hover {
+    background: #a8b0bd;
 }
 
 /* List Item Styles */
@@ -171,6 +194,40 @@
     --slds-c-spinner-color-foreground: var(--lwc-colorBrandPrimary, #0176d3);
 }
 
+/* Infinite Scroll Loading More Indicator */
+.loading-more-indicator {
+    padding: 1rem;
+    text-align: center;
+    background-color: #f8f9fa;
+    border-top: 1px solid #e5e5e5;
+    margin-top: 8px;
+    border-radius: 0 0 8px 8px;
+}
+
+.loading-more-indicator lightning-spinner {
+    --slds-c-spinner-color-foreground: var(--lwc-colorBrandPrimary, #0176d3);
+}
+
+.loading-more-indicator p {
+    margin-top: 8px;
+    color: var(--lwc-colorTextWeak, #706e6b);
+    font-size: 0.875rem;
+}
+
+/* Records Count Styling */
+.slds-m-top_medium.slds-text-align_center {
+    background: var(--lwc-colorBackgroundAlt, #fafaf9);
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--lwc-colorBorder, #e5e5e5);
+    margin-top: 16px;
+}
+
+.slds-m-top_medium.slds-text-align_center span {
+    color: var(--lwc-colorTextWeak, #706e6b);
+    font-size: 0.875rem;
+}
+
 /* No Data State */
 .slds-text-align_center {
     padding: 40px 20px;
@@ -190,19 +247,6 @@
     color: var(--lwc-colorTextWeak, #706e6b);
     max-width: 400px;
     margin: 0 auto 20px;
-}
-
-/* Pagination Styling */
-.slds-m-top_medium .slds-grid {
-    background: var(--lwc-colorBackgroundAlt, #fafaf9);
-    padding: 16px;
-    border-radius: 8px;
-    border: 1px solid var(--lwc-colorBorder, #e5e5e5);
-}
-
-.slds-m-top_medium lightning-button-group lightning-button {
-    --slds-c-button-radius: 6px;
-    margin: 0 2px;
 }
 
 /* Card Header Enhancements */
@@ -226,6 +270,10 @@ lightning-button:hover {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .modern-list-container {
+        max-height: 60vh;
+    }
+    
     .slds-card__header .slds-grid {
         display: block;
     }
@@ -263,19 +311,13 @@ lightning-button:hover {
         justify-content: center;
         margin-bottom: 12px;
     }
-    
-    .slds-m-top_medium .slds-grid {
-        display: block;
-        text-align: center;
-        padding: 12px;
-    }
-    
-    .slds-m-top_medium .slds-col {
-        margin-bottom: 8px;
-    }
 }
 
 @media (max-width: 480px) {
+    .modern-list-container {
+        max-height: 50vh;
+    }
+    
     .modern-list-item h3 {
         font-size: 1rem;
     }
@@ -358,6 +400,10 @@ lightning-button:hover {
     
     .modern-list-item {
         animation: none;
+    }
+    
+    .modern-list-container {
+        scroll-behavior: auto;
     }
 }
 

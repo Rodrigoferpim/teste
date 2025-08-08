@@ -1,7 +1,7 @@
 import { LightningElement, track, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
-export default class ModernListView extends LightningElement {
+export default class Teste extends LightningElement {
     // Public properties
     @api objectApiName = 'Account'; // Default object
     @api fieldsToDisplay = 'Name,Description,Owner.Name,LastModifiedDate,Type';
@@ -20,6 +20,16 @@ export default class ModernListView extends LightningElement {
     @track totalRecords = 0;
     @track displayedRecords = 0;
     @track hasMoreRecords = false;
+
+    // Advanced Filters properties
+    @track showAdvancedFilters = false;
+    @track selectedStatusFilters = [];
+    @track selectedTypeFilters = [];
+    @track selectedOwnerFilters = [];
+    @track modifiedFromDate = '';
+    @track modifiedToDate = '';
+    @track ownerSearchTerm = '';
+    @track showOwnerOptions = false;
 
     // Infinite scroll properties
     scrollThreshold = 100; // Pixels from bottom to trigger load
@@ -85,6 +95,69 @@ export default class ModernListView extends LightningElement {
         return baseOptions;
     }
 
+    get statusFilterOptions() {
+        const allStatuses = new Set();
+        this.allData.forEach(record => {
+            if (record.Status) {
+                allStatuses.add(record.Status);
+            }
+        });
+        
+        return Array.from(allStatuses).map(status => ({
+            label: status,
+            value: status
+        }));
+    }
+
+    get typeFilterOptions() {
+        const allTypes = new Set();
+        this.allData.forEach(record => {
+            if (record.Type) {
+                allTypes.add(record.Type);
+            }
+        });
+        
+        return Array.from(allTypes).map(type => ({
+            label: type,
+            value: type
+        }));
+    }
+
+    get ownerFilterOptions() {
+        const allOwners = new Set();
+        this.allData.forEach(record => {
+            if (record.Owner) {
+                allOwners.add(record.Owner);
+            }
+        });
+        
+        return Array.from(allOwners).map(owner => ({
+            label: owner,
+            value: owner
+        }));
+    }
+
+    get filteredOwnerOptions() {
+        if (!this.ownerSearchTerm) {
+            return this.ownerFilterOptions.map(owner => ({
+                ...owner,
+                selected: this.selectedOwnerFilters.includes(owner.value) ? 'slds-show' : 'slds-hide'
+            }));
+        }
+        
+        const searchLower = this.ownerSearchTerm.toLowerCase();
+        return this.ownerFilterOptions
+            .filter(owner => owner.label.toLowerCase().includes(searchLower))
+            .map(owner => ({
+                ...owner,
+                selected: this.selectedOwnerFilters.includes(owner.value) ? 'slds-show' : 'slds-hide'
+            }));
+    }
+
+    get showTypeFilter() {
+        return this.objectApiName === 'Account' || this.objectApiName === 'Contact' || this.objectApiName === 'Lead';
+    }
+
     // Lifecycle hooks
     connectedCallback() {
         this.loadData();
@@ -103,40 +176,62 @@ export default class ModernListView extends LightningElement {
 
     // Scroll handling methods
     addScrollListener() {
-        const container = this.template.querySelector('.modern-list-container');
-        if (container) {
-            container.addEventListener('scroll', this.handleScroll.bind(this));
-        }
+        // Use a more reliable approach for scroll detection
+        this.boundScrollHandler = this.handleScroll.bind(this);
+        this.boundWindowScrollHandler = this.handleWindowScroll.bind(this);
+        
+        // Add scroll listener to the container
+        setTimeout(() => {
+            const container = this.template.querySelector('.modern-list-container');
+            if (container) {
+                container.addEventListener('scroll', this.boundScrollHandler, { passive: true });
+            }
+        }, 100);
         
         // Also listen to window scroll for cases where the component fills the viewport
-        window.addEventListener('scroll', this.handleWindowScroll.bind(this));
+        window.addEventListener('scroll', this.boundWindowScrollHandler, { passive: true });
     }
 
     removeScrollListener() {
         const container = this.template.querySelector('.modern-list-container');
-        if (container) {
-            container.removeEventListener('scroll', this.handleScroll.bind(this));
+        if (container && this.boundScrollHandler) {
+            container.removeEventListener('scroll', this.boundScrollHandler);
         }
-        window.removeEventListener('scroll', this.handleWindowScroll.bind(this));
+        if (this.boundWindowScrollHandler) {
+            window.removeEventListener('scroll', this.boundWindowScrollHandler);
+        }
     }
 
     handleScroll(event) {
+        if (this.isLoadingMore || !this.hasMoreRecords || this.isLoading) {
+            return;
+        }
+
         const container = event.target;
         const scrollTop = container.scrollTop;
         const scrollHeight = container.scrollHeight;
         const clientHeight = container.clientHeight;
 
-        if (scrollHeight - scrollTop - clientHeight < this.scrollThreshold) {
+        // Check if we're near the bottom (within threshold)
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+        
+        if (distanceFromBottom <= this.scrollThreshold) {
             this.loadMoreRecords();
         }
     }
 
     handleWindowScroll() {
+        if (this.isLoadingMore || !this.hasMoreRecords || this.isLoading) {
+            return;
+        }
+
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         const scrollHeight = document.documentElement.scrollHeight;
         const clientHeight = window.innerHeight;
 
-        if (scrollHeight - scrollTop - clientHeight < this.scrollThreshold) {
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+        if (distanceFromBottom <= this.scrollThreshold) {
             this.loadMoreRecords();
         }
     }
@@ -429,6 +524,9 @@ export default class ModernListView extends LightningElement {
             );
         }
 
+        // Apply advanced filters
+        filtered = this.applyAdvancedFilters(filtered);
+
         this.filteredData = filtered;
         this.totalRecords = filtered.length;
         
@@ -437,6 +535,54 @@ export default class ModernListView extends LightningElement {
         this.displayedData = initialBatch;
         this.displayedRecords = initialBatch.length;
         this.hasMoreRecords = this.displayedData.length < this.filteredData.length;
+    }
+
+    applyAdvancedFilters(data) {
+        let filtered = data;
+
+        // Status filter
+        if (this.selectedStatusFilters.length > 0) {
+            filtered = filtered.filter(record => 
+                this.selectedStatusFilters.includes(record.Status)
+            );
+        }
+
+        // Type filter
+        if (this.selectedTypeFilters.length > 0) {
+            filtered = filtered.filter(record => 
+                this.selectedTypeFilters.includes(record.Type)
+            );
+        }
+
+        // Owner filter
+        if (this.selectedOwnerFilters.length > 0) {
+            filtered = filtered.filter(record => 
+                this.selectedOwnerFilters.includes(record.Owner)
+            );
+        }
+
+        // Date range filter
+        if (this.modifiedFromDate || this.modifiedToDate) {
+            filtered = filtered.filter(record => {
+                const recordDate = new Date(record.LastModified);
+                let includeRecord = true;
+
+                if (this.modifiedFromDate) {
+                    const fromDate = new Date(this.modifiedFromDate);
+                    includeRecord = includeRecord && recordDate >= fromDate;
+                }
+
+                if (this.modifiedToDate) {
+                    const toDate = new Date(this.modifiedToDate);
+                    toDate.setHours(23, 59, 59, 999); // End of day
+                    includeRecord = includeRecord && recordDate <= toDate;
+                }
+
+                return includeRecord;
+            });
+        }
+
+        return filtered;
     }
 
     applyListViewFilter(data) {
@@ -496,8 +642,71 @@ export default class ModernListView extends LightningElement {
     }
 
     handleFilterClick() {
-        this.showToast('Info', 'Advanced filters would be implemented here', 'info');
-        // In a real implementation, this would open a filter modal
+        this.showAdvancedFilters = true;
+    }
+
+    handleAdvancedFiltersClick() {
+        this.showAdvancedFilters = true;
+    }
+
+    handleCloseAdvancedFilters() {
+        this.showAdvancedFilters = false;
+        this.showOwnerOptions = false;
+    }
+
+    handleStatusFilterChange(event) {
+        this.selectedStatusFilters = event.detail.value;
+    }
+
+    handleTypeFilterChange(event) {
+        this.selectedTypeFilters = event.detail.value;
+    }
+
+    handleOwnerSearch(event) {
+        this.ownerSearchTerm = event.target.value;
+        this.showOwnerOptions = this.ownerSearchTerm.length > 0;
+    }
+
+    handleOwnerSelect(event) {
+        const selectedOwner = event.target.dataset.value;
+        if (selectedOwner) {
+            if (this.selectedOwnerFilters.includes(selectedOwner)) {
+                // Remove if already selected
+                this.selectedOwnerFilters = this.selectedOwnerFilters.filter(owner => owner !== selectedOwner);
+            } else {
+                // Add if not selected
+                this.selectedOwnerFilters = [...this.selectedOwnerFilters, selectedOwner];
+            }
+        }
+    }
+
+    handleModifiedFromChange(event) {
+        this.modifiedFromDate = event.target.value;
+    }
+
+    handleModifiedToChange(event) {
+        this.modifiedToDate = event.target.value;
+    }
+
+    handleApplyFilters() {
+        this.showAdvancedFilters = false;
+        this.showOwnerOptions = false;
+        this.applyFiltersAndSort();
+        this.showToast('Success', 'Filters applied successfully', 'success');
+    }
+
+    handleClearAllFilters() {
+        this.selectedStatusFilters = [];
+        this.selectedTypeFilters = [];
+        this.selectedOwnerFilters = [];
+        this.modifiedFromDate = '';
+        this.modifiedToDate = '';
+        this.ownerSearchTerm = '';
+        this.searchTerm = '';
+        this.selectedListView = 'all';
+        this.showOwnerOptions = false;
+        this.applyFiltersAndSort();
+        this.showToast('Success', 'All filters cleared', 'success');
     }
 
     handleRefresh() {

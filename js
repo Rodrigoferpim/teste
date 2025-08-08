@@ -13,8 +13,7 @@ export default class ModernListView extends LightningElement {
     @track data = [];
     @track filteredData = [];
     @track searchTerm = '';
-    @track sortBy = 'Name';
-    @track sortDirection = 'asc';
+    @track selectedListView = 'all';
     @track isLoading = false;
     @track currentPage = 1;
     @track totalRecords = 0;
@@ -45,13 +44,59 @@ export default class ModernListView extends LightningElement {
         return this.currentPage >= Math.ceil(this.totalRecords / this.recordsPerPage);
     }
 
-    get sortOptions() {
-        return [
-            { label: 'Name', value: 'Name' },
-            { label: 'Last Modified', value: 'LastModified' },
-            { label: 'Owner', value: 'Owner' },
-            { label: 'Status', value: 'Status' }
+    get cardTitle() {
+        return this.title || 'Modern Data List';
+    }
+
+    get cardIcon() {
+        return this.iconName || 'standard:list';
+    }
+
+    get listViewOptions() {
+        const baseOptions = [
+            { label: `All ${this.objectApiName}s`, value: 'all' },
+            { label: 'Recently Viewed', value: 'recent' },
+            { label: 'My Records', value: 'mine' }
         ];
+
+        // Add object-specific list views
+        if (this.objectApiName === 'Account') {
+            return [
+                ...baseOptions,
+                { label: 'Active Accounts', value: 'active' },
+                { label: 'Customer Accounts', value: 'customers' },
+                { label: 'Prospect Accounts', value: 'prospects' }
+            ];
+        } else if (this.objectApiName === 'Contact') {
+            return [
+                ...baseOptions,
+                { label: 'Active Contacts', value: 'active' },
+                { label: 'My Team Contacts', value: 'team' }
+            ];
+        } else if (this.objectApiName === 'Opportunity') {
+            return [
+                ...baseOptions,
+                { label: 'Open Opportunities', value: 'open' },
+                { label: 'Closing This Month', value: 'closing' },
+                { label: 'Won Opportunities', value: 'won' }
+            ];
+        } else if (this.objectApiName === 'Case') {
+            return [
+                ...baseOptions,
+                { label: 'Open Cases', value: 'open' },
+                { label: 'High Priority Cases', value: 'high_priority' },
+                { label: 'My Cases', value: 'mine' }
+            ];
+        } else if (this.objectApiName === 'Lead') {
+            return [
+                ...baseOptions,
+                { label: 'Open Leads', value: 'open' },
+                { label: 'Qualified Leads', value: 'qualified' },
+                { label: 'Unqualified Leads', value: 'unqualified' }
+            ];
+        }
+
+        return baseOptions;
     }
 
     // Lifecycle hooks
@@ -73,27 +118,203 @@ export default class ModernListView extends LightningElement {
     }
 
     generateSampleData() {
-        const statuses = ['Active', 'Inactive', 'Pending', 'Closed'];
-        const statusClasses = ['slds-theme_success', 'slds-theme_error', 'slds-theme_warning', 'slds-theme_info'];
-        const owners = ['John Doe', 'Jane Smith', 'Mike Johnson', 'Sarah Wilson', 'David Brown'];
+        // Mock data based on different object types
+        const mockDataSets = {
+            'Account': this.generateAccountData(),
+            'Contact': this.generateContactData(),
+            'Opportunity': this.generateOpportunityData(),
+            'Case': this.generateCaseData(),
+            'Lead': this.generateLeadData()
+        };
+
+        // Return data based on objectApiName or default to Account
+        return mockDataSets[this.objectApiName] || mockDataSets['Account'];
+    }
+
+    generateAccountData() {
+        const companies = [
+            'Acme Corporation', 'Global Industries', 'Tech Solutions Inc', 'Innovative Systems',
+            'Future Enterprises', 'Dynamic Solutions', 'Premier Services', 'Advanced Technologies',
+            'Strategic Partners', 'Excellence Group', 'Visionary Corp', 'Progressive Solutions',
+            'Elite Services', 'Pinnacle Systems', 'Optimal Solutions', 'Superior Technologies'
+        ];
         
+        const industries = ['Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail', 'Education'];
+        const types = ['Customer', 'Prospect', 'Partner', 'Competitor'];
+        const statuses = ['Active', 'Inactive', 'Pending Review', 'Closed'];
+        const statusClasses = ['slds-theme_success', 'slds-theme_error', 'slds-theme_warning', 'slds-theme_info'];
+        const owners = ['Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Pereira', 'Fernanda Costa'];
+
         const sampleData = [];
-        for (let i = 1; i <= 50; i++) {
+        for (let i = 0; i < companies.length; i++) {
             const statusIndex = Math.floor(Math.random() * statuses.length);
             const ownerIndex = Math.floor(Math.random() * owners.length);
-            const lastModified = new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000);
+            const industryIndex = Math.floor(Math.random() * industries.length);
+            const typeIndex = Math.floor(Math.random() * types.length);
+            const lastModified = new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000);
             
             sampleData.push({
-                Id: `record_${i}`,
-                Name: `Record ${i}`,
-                Description: `This is a sample description for record ${i}. It contains detailed information about the record.`,
-                SubDescription: i % 3 === 0 ? `Additional details for record ${i}` : null,
+                Id: `001${String(i).padStart(15, '0')}`,
+                Name: companies[i],
+                Description: `${industries[industryIndex]} company specializing in innovative solutions and services.`,
+                SubDescription: `Annual Revenue: $${(Math.random() * 10 + 1).toFixed(1)}M | Employees: ${Math.floor(Math.random() * 1000 + 50)}`,
                 Status: statuses[statusIndex],
                 StatusClass: statusClasses[statusIndex],
                 Owner: owners[ownerIndex],
                 LastModified: this.formatDate(lastModified),
-                AvatarUrl: null, // Will use fallback icon
-                Type: i % 2 === 0 ? 'Customer' : 'Prospect'
+                AvatarUrl: null,
+                Type: types[typeIndex],
+                Industry: industries[industryIndex]
+            });
+        }
+        
+        return sampleData;
+    }
+
+    generateContactData() {
+        const firstNames = ['Ana', 'Carlos', 'Maria', 'João', 'Fernanda', 'Pedro', 'Juliana', 'Ricardo', 'Camila', 'Bruno'];
+        const lastNames = ['Silva', 'Santos', 'Oliveira', 'Pereira', 'Costa', 'Rodrigues', 'Almeida', 'Nascimento', 'Lima', 'Araújo'];
+        const titles = ['CEO', 'CTO', 'Manager', 'Director', 'Analyst', 'Coordinator', 'Specialist', 'Consultant'];
+        const departments = ['Sales', 'Marketing', 'IT', 'Finance', 'Operations', 'HR'];
+        const statuses = ['Active', 'Inactive', 'Prospect', 'Customer'];
+        const statusClasses = ['slds-theme_success', 'slds-theme_error', 'slds-theme_warning', 'slds-theme_info'];
+
+        const sampleData = [];
+        for (let i = 0; i < 20; i++) {
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const title = titles[Math.floor(Math.random() * titles.length)];
+            const department = departments[Math.floor(Math.random() * departments.length)];
+            const statusIndex = Math.floor(Math.random() * statuses.length);
+            const lastModified = new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000);
+            
+            sampleData.push({
+                Id: `003${String(i).padStart(15, '0')}`,
+                Name: `${firstName} ${lastName}`,
+                Description: `${title} - ${department}`,
+                SubDescription: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com | +55 11 9${Math.floor(Math.random() * 9000 + 1000)}-${Math.floor(Math.random() * 9000 + 1000)}`,
+                Status: statuses[statusIndex],
+                StatusClass: statusClasses[statusIndex],
+                Owner: `${firstName} ${lastName}`,
+                LastModified: this.formatDate(lastModified),
+                AvatarUrl: null,
+                Type: 'Contact',
+                Title: title
+            });
+        }
+        
+        return sampleData;
+    }
+
+    generateOpportunityData() {
+        const opportunityNames = [
+            'Sistema de CRM Empresarial', 'Implementação ERP', 'Consultoria Digital', 'Plataforma E-commerce',
+            'Solução de BI', 'Migração para Cloud', 'Automação de Processos', 'Sistema de Gestão',
+            'Aplicativo Mobile', 'Integração de Sistemas', 'Modernização IT', 'Projeto de Analytics'
+        ];
+        
+        const stages = ['Prospecting', 'Qualification', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
+        const statusClasses = ['slds-theme_info', 'slds-theme_warning', 'slds-theme_warning', 'slds-theme_warning', 'slds-theme_success', 'slds-theme_error'];
+        const owners = ['Ana Silva', 'Carlos Santos', 'Maria Oliveira', 'João Pereira', 'Fernanda Costa'];
+
+        const sampleData = [];
+        for (let i = 0; i < opportunityNames.length; i++) {
+            const stageIndex = Math.floor(Math.random() * stages.length);
+            const ownerIndex = Math.floor(Math.random() * owners.length);
+            const amount = Math.floor(Math.random() * 500000 + 10000);
+            const probability = stages[stageIndex] === 'Closed Won' ? 100 : 
+                              stages[stageIndex] === 'Closed Lost' ? 0 : 
+                              Math.floor(Math.random() * 80 + 10);
+            const lastModified = new Date(Date.now() - Math.random() * 45 * 24 * 60 * 60 * 1000);
+            
+            sampleData.push({
+                Id: `006${String(i).padStart(15, '0')}`,
+                Name: opportunityNames[i],
+                Description: `Valor: R$ ${amount.toLocaleString('pt-BR')} | Probabilidade: ${probability}%`,
+                SubDescription: `Fechamento previsto: ${this.formatDate(new Date(Date.now() + Math.random() * 180 * 24 * 60 * 60 * 1000))}`,
+                Status: stages[stageIndex],
+                StatusClass: statusClasses[stageIndex],
+                Owner: owners[ownerIndex],
+                LastModified: this.formatDate(lastModified),
+                AvatarUrl: null,
+                Type: 'Opportunity',
+                Amount: amount
+            });
+        }
+        
+        return sampleData;
+    }
+
+    generateCaseData() {
+        const subjects = [
+            'Sistema não carrega dados', 'Erro de login recorrente', 'Performance lenta na aplicação',
+            'Falha na integração', 'Problema de sincronização', 'Bug no relatório mensal',
+            'Usuário sem acesso', 'Erro 500 no servidor', 'Dados inconsistentes',
+            'Falha no backup automático', 'Interface não responsiva', 'Timeout na API'
+        ];
+        
+        const priorities = ['High', 'Medium', 'Low', 'Critical'];
+        const statuses = ['New', 'In Progress', 'Pending', 'Resolved', 'Closed'];
+        const statusClasses = ['slds-theme_info', 'slds-theme_warning', 'slds-theme_warning', 'slds-theme_success', 'slds-theme_success'];
+        const owners = ['Suporte Técnico', 'Equipe de TI', 'Desenvolvimento', 'Infraestrutura', 'Segurança'];
+
+        const sampleData = [];
+        for (let i = 0; i < subjects.length; i++) {
+            const statusIndex = Math.floor(Math.random() * statuses.length);
+            const priorityIndex = Math.floor(Math.random() * priorities.length);
+            const ownerIndex = Math.floor(Math.random() * owners.length);
+            const caseNumber = `CASE-${String(i + 1000).padStart(6, '0')}`;
+            const lastModified = new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000);
+            
+            sampleData.push({
+                Id: `500${String(i).padStart(15, '0')}`,
+                Name: `${caseNumber}: ${subjects[i]}`,
+                Description: `Prioridade: ${priorities[priorityIndex]} | Tempo de resolução: ${Math.floor(Math.random() * 48 + 1)}h`,
+                SubDescription: `SLA: ${Math.floor(Math.random() * 72 + 24)}h`,
+                Status: statuses[statusIndex],
+                StatusClass: statusClasses[statusIndex],
+                Owner: owners[ownerIndex],
+                LastModified: this.formatDate(lastModified),
+                AvatarUrl: null,
+                Type: 'Case',
+                Priority: priorities[priorityIndex]
+            });
+        }
+        
+        return sampleData;
+    }
+
+    generateLeadData() {
+        const companies = [
+            'StartupTech', 'InnovaCorp', 'TechStart', 'DigitalPro', 'CloudFirst',
+            'DataDriven', 'SmartSolutions', 'NextGen', 'FutureTech', 'AgileWorks'
+        ];
+        
+        const sources = ['Website', 'LinkedIn', 'Trade Show', 'Referral', 'Cold Call', 'Email Campaign'];
+        const statuses = ['New', 'Qualified', 'Nurturing', 'Converted', 'Unqualified'];
+        const statusClasses = ['slds-theme_info', 'slds-theme_success', 'slds-theme_warning', 'slds-theme_success', 'slds-theme_error'];
+        const owners = ['Vendas SP', 'Vendas RJ', 'Vendas BH', 'Vendas RS', 'Vendas PR'];
+
+        const sampleData = [];
+        for (let i = 0; i < companies.length; i++) {
+            const statusIndex = Math.floor(Math.random() * statuses.length);
+            const sourceIndex = Math.floor(Math.random() * sources.length);
+            const ownerIndex = Math.floor(Math.random() * owners.length);
+            const score = Math.floor(Math.random() * 100);
+            const lastModified = new Date(Date.now() - Math.random() * 15 * 24 * 60 * 60 * 1000);
+            
+            sampleData.push({
+                Id: `00Q${String(i).padStart(15, '0')}`,
+                Name: `Lead - ${companies[i]}`,
+                Description: `Fonte: ${sources[sourceIndex]} | Score: ${score}/100`,
+                SubDescription: `Interesse em: Soluções de automação e integração de sistemas`,
+                Status: statuses[statusIndex],
+                StatusClass: statusClasses[statusIndex],
+                Owner: owners[ownerIndex],
+                LastModified: this.formatDate(lastModified),
+                AvatarUrl: null,
+                Type: 'Lead',
+                Source: sources[sourceIndex]
             });
         }
         
@@ -115,6 +336,9 @@ export default class ModernListView extends LightningElement {
     applyFiltersAndSort() {
         let filtered = [...this.data];
 
+        // Apply list view filter
+        filtered = this.applyListViewFilter(filtered);
+
         // Apply search filter
         if (this.searchTerm) {
             const searchLower = this.searchTerm.toLowerCase();
@@ -126,29 +350,57 @@ export default class ModernListView extends LightningElement {
             );
         }
 
-        // Apply sorting
-        filtered.sort((a, b) => {
-            let aValue = a[this.sortBy] || '';
-            let bValue = b[this.sortBy] || '';
-            
-            if (typeof aValue === 'string') {
-                aValue = aValue.toLowerCase();
-                bValue = bValue.toLowerCase();
-            }
-
-            if (this.sortDirection === 'asc') {
-                return aValue > bValue ? 1 : -1;
-            } else {
-                return aValue < bValue ? 1 : -1;
-            }
-        });
-
         this.totalRecords = filtered.length;
         
         // Apply pagination
         const startIndex = (this.currentPage - 1) * this.recordsPerPage;
         const endIndex = startIndex + this.recordsPerPage;
         this.filteredData = filtered.slice(startIndex, endIndex);
+    }
+
+    applyListViewFilter(data) {
+        switch (this.selectedListView) {
+            case 'all':
+                return data;
+            case 'recent':
+                // Show records modified in last 7 days
+                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                return data.filter(record => new Date(record.LastModified) > sevenDaysAgo);
+            case 'mine':
+                // Show records owned by current user (simulated)
+                return data.filter(record => record.Owner && record.Owner.includes('Ana Silva'));
+            case 'active':
+                return data.filter(record => record.Status === 'Active');
+            case 'customers':
+                return data.filter(record => record.Type === 'Customer');
+            case 'prospects':
+                return data.filter(record => record.Type === 'Prospect');
+            case 'open':
+                return data.filter(record => 
+                    record.Status && !['Closed', 'Closed Won', 'Closed Lost', 'Resolved'].includes(record.Status)
+                );
+            case 'closing':
+                // For opportunities closing this month
+                const thisMonth = new Date().getMonth();
+                return data.filter(record => {
+                    if (record.SubDescription && record.SubDescription.includes('Fechamento previsto:')) {
+                        const dateStr = record.SubDescription.split('Fechamento previsto: ')[1];
+                        const closeDate = new Date(dateStr);
+                        return closeDate.getMonth() === thisMonth;
+                    }
+                    return false;
+                });
+            case 'won':
+                return data.filter(record => record.Status === 'Closed Won');
+            case 'high_priority':
+                return data.filter(record => record.Priority === 'High' || record.Priority === 'Critical');
+            case 'qualified':
+                return data.filter(record => record.Status === 'Qualified');
+            case 'unqualified':
+                return data.filter(record => record.Status === 'Unqualified');
+            default:
+                return data;
+        }
     }
 
     // Event handlers
@@ -158,9 +410,15 @@ export default class ModernListView extends LightningElement {
         this.applyFiltersAndSort();
     }
 
-    handleSortChange(event) {
-        this.sortBy = event.detail.value;
+    handleListViewChange(event) {
+        this.selectedListView = event.detail.value;
+        this.currentPage = 1; // Reset to first page
         this.applyFiltersAndSort();
+    }
+
+    handleFilterClick() {
+        this.showToast('Info', 'Advanced filters would be implemented here', 'info');
+        // In a real implementation, this would open a filter modal
     }
 
     handleRefresh() {
@@ -253,4 +511,5 @@ export default class ModernListView extends LightningElement {
         this.applyFiltersAndSort();
     }
 }
+
 

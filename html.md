@@ -59,7 +59,7 @@
             <template if:false={isLoading}>
                 <template if:true={hasData}>
                     <div class="modern-list-container">
-                        <template for:each={filteredData} for:item="record">
+                        <template for:each={displayedData} for:item="record">
                             <div key={record.Id} class="modern-list-item" onclick={handleItemClick} data-id={record.Id}>
                                 <div class="slds-grid slds-gutters">
                                     <!-- Avatar/Icon -->
@@ -174,33 +174,25 @@
                         </template>
                     </div>
                     
-                    <!-- Pagination -->
-                    <template if:true={showPagination}>
-                        <div class="slds-m-top_medium">
-                            <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
-                                <div class="slds-col">
-                                    <span class="slds-text-body_small slds-text-color_weak">
-                                        Showing {startRecord} to {endRecord} of {totalRecords} records
-                                    </span>
-                                </div>
-                                <div class="slds-col slds-no-flex">
-                                    <lightning-button-group>
-                                        <lightning-button 
-                                            label="Previous" 
-                                            icon-name="utility:chevronleft"
-                                            disabled={isFirstPage}
-                                            onclick={handlePrevious}>
-                                        </lightning-button>
-                                        <lightning-button 
-                                            label="Next" 
-                                            icon-name="utility:chevronright"
-                                            icon-position="right"
-                                            disabled={isLastPage}
-                                            onclick={handleNext}>
-                                        </lightning-button>
-                                    </lightning-button-group>
-                                </div>
-                            </div>
+                    <!-- Infinite Scroll Loading Indicator -->
+                    <template if:true={isLoadingMore}>
+                        <div class="slds-align_absolute-center slds-m-vertical_medium">
+                            <lightning-spinner alternative-text="Loading more..." size="small"></lightning-spinner>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_small">
+                                Loading more records...
+                            </p>
+                        </div>
+                    </template>
+                    
+                    <!-- Records Count -->
+                    <template if:true={hasData}>
+                        <div class="slds-m-top_medium slds-text-align_center">
+                            <span class="slds-text-body_small slds-text-color_weak">
+                                Showing {displayedRecords} of {totalRecords} records
+                                <template if:true={hasMoreRecords}>
+                                    • Scroll down to load more
+                                </template>
+                            </span>
                         </div>
                     </template>
                 </template>

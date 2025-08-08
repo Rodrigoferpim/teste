@@ -164,7 +164,11 @@ export default class ModernListView extends LightningElement {
                 LastModified: this.formatDate(lastModified),
                 AvatarUrl: null,
                 Type: types[typeIndex],
-                Industry: industries[industryIndex]
+                Industry: industries[industryIndex],
+                Address: `${Math.floor(Math.random() * 1000)} Main St, City, State ${Math.floor(Math.random() * 90000) + 10000}`,
+                Email: `${companies[i].toLowerCase().replace(/ /g, '')}@example.com`,
+                Phone: `+1 (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`,
+                Website: `https://www.${companies[i].toLowerCase().replace(/ /g, '')}.com`
             });
         }
         
@@ -199,7 +203,10 @@ export default class ModernListView extends LightningElement {
                 LastModified: this.formatDate(lastModified),
                 AvatarUrl: null,
                 Type: 'Contact',
-                Title: title
+                Title: title,
+                Email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
+                Phone: `+1 (${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`,
+                Address: `${Math.floor(Math.random() * 1000)} Oak Ave, Town, State ${Math.floor(Math.random() * 90000) + 10000}`
             });
         }
         
@@ -346,7 +353,11 @@ export default class ModernListView extends LightningElement {
                 record.Name.toLowerCase().includes(searchLower) ||
                 record.Description.toLowerCase().includes(searchLower) ||
                 (record.Owner && record.Owner.toLowerCase().includes(searchLower)) ||
-                (record.Status && record.Status.toLowerCase().includes(searchLower))
+                (record.Status && record.Status.toLowerCase().includes(searchLower)) ||
+                (record.Address && record.Address.toLowerCase().includes(searchLower)) ||
+                (record.Email && record.Email.toLowerCase().includes(searchLower)) ||
+                (record.Phone && record.Phone.toLowerCase().includes(searchLower)) ||
+                (record.Website && record.Website.toLowerCase().includes(searchLower))
             );
         }
 

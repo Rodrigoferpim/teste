@@ -101,6 +101,42 @@
                                             </div>
                                         </div>
                                         
+                                        <!-- Additional Fields -->
+                                        <div class="slds-grid slds-gutters slds-m-top_small slds-wrap">
+                                            <template if:true={record.Address}>
+                                                <div class="slds-col slds-size_1-of-2 slds-small-size_1-of-1">
+                                                    <span class="slds-text-body_small slds-text-color_weak">
+                                                        <lightning-icon icon-name="utility:location" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <span class="slds-text-title">Address:</span> {record.Address}
+                                                    </span>
+                                                </div>
+                                            </template>
+                                            <template if:true={record.Email}>
+                                                <div class="slds-col slds-size_1-of-2 slds-small-size_1-of-1">
+                                                    <span class="slds-text-body_small slds-text-color_weak">
+                                                        <lightning-icon icon-name="utility:email" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <span class="slds-text-title">Email:</span> {record.Email}
+                                                    </span>
+                                                </div>
+                                            </template>
+                                            <template if:true={record.Phone}>
+                                                <div class="slds-col slds-size_1-of-2 slds-small-size_1-of-1">
+                                                    <span class="slds-text-body_small slds-text-color_weak">
+                                                        <lightning-icon icon-name="utility:call" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <span class="slds-text-title">Phone:</span> {record.Phone}
+                                                    </span>
+                                                </div>
+                                            </template>
+                                            <template if:true={record.Website}>
+                                                <div class="slds-col slds-size_1-of-2 slds-small-size_1-of-1">
+                                                    <span class="slds-text-body_small slds-text-color_weak">
+                                                        <lightning-icon icon-name="utility:world" size="xx-small" class="slds-m-right_xx-small"></lightning-icon>
+                                                        <span class="slds-text-title">Website:</span> {record.Website}
+                                                    </span>
+                                                </div>
+                                            </template>
+                                        </div>
+
                                         <!-- Metadata Row -->
                                         <div class="slds-grid slds-gutters slds-m-top_small">
                                             <div class="slds-col">

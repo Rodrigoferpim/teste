@@ -27,6 +27,44 @@
     border-color: var(--lwc-colorBorderBrandPrimary, #0176d3);
 }
 
+/* Advanced Filters Modal Styling */
+.slds-modal {
+    z-index: 9000;
+}
+
+.slds-modal__container {
+    max-width: 80rem;
+    width: 90%;
+}
+
+.slds-dropdown {
+    position: absolute;
+    z-index: 9999;
+    background: white;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.16);
+    margin-top: 0.125rem;
+}
+
+.slds-dropdown__item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.slds-dropdown__item:hover {
+    background-color: #f4f6f9;
+}
+
+.slds-dropdown__item:last-child {
+    border-bottom: none;
+}
+
+.slds-dropdown__item lightning-icon {
+    margin-right: 0.5rem;
+}
+
 /* Container Styles - Enhanced for Infinite Scroll */
 .modern-list-container {
     background: var(--lwc-colorBackgroundAlt, #fafaf9);
@@ -310,6 +348,11 @@ lightning-button:hover {
         display: flex;
         justify-content: center;
         margin-bottom: 12px;
+    }
+    
+    .slds-modal__container {
+        width: 95%;
+        max-width: none;
     }
 }
 

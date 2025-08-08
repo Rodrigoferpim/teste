@@ -10,38 +10,24 @@ export default class ModernListView extends LightningElement {
     @api iconName = 'standard:list';
 
     // Private tracked properties
-    @track data = [];
-    @track filteredData = [];
+    @track allData = []; // All available data
+    @track filteredData = []; // Filtered data based on search/list view
+    @track displayedData = []; // Currently displayed data (for infinite scroll)
     @track searchTerm = '';
     @track selectedListView = 'all';
     @track isLoading = false;
-    @track currentPage = 1;
+    @track isLoadingMore = false;
     @track totalRecords = 0;
+    @track displayedRecords = 0;
+    @track hasMoreRecords = false;
+
+    // Infinite scroll properties
+    scrollThreshold = 100; // Pixels from bottom to trigger load
+    isScrollListenerAdded = false;
 
     // Computed properties
     get hasData() {
-        return this.filteredData && this.filteredData.length > 0;
-    }
-
-    get showPagination() {
-        return this.totalRecords > this.recordsPerPage;
-    }
-
-    get startRecord() {
-        return (this.currentPage - 1) * this.recordsPerPage + 1;
-    }
-
-    get endRecord() {
-        const end = this.currentPage * this.recordsPerPage;
-        return end > this.totalRecords ? this.totalRecords : end;
-    }
-
-    get isFirstPage() {
-        return this.currentPage === 1;
-    }
-
-    get isLastPage() {
-        return this.currentPage >= Math.ceil(this.totalRecords / this.recordsPerPage);
+        return this.displayedData && this.displayedData.length > 0;
     }
 
     get cardTitle() {
@@ -104,17 +90,89 @@ export default class ModernListView extends LightningElement {
         this.loadData();
     }
 
+    renderedCallback() {
+        if (!this.isScrollListenerAdded) {
+            this.addScrollListener();
+            this.isScrollListenerAdded = true;
+        }
+    }
+
+    disconnectedCallback() {
+        this.removeScrollListener();
+    }
+
+    // Scroll handling methods
+    addScrollListener() {
+        const container = this.template.querySelector('.modern-list-container');
+        if (container) {
+            container.addEventListener('scroll', this.handleScroll.bind(this));
+        }
+        
+        // Also listen to window scroll for cases where the component fills the viewport
+        window.addEventListener('scroll', this.handleWindowScroll.bind(this));
+    }
+
+    removeScrollListener() {
+        const container = this.template.querySelector('.modern-list-container');
+        if (container) {
+            container.removeEventListener('scroll', this.handleScroll.bind(this));
+        }
+        window.removeEventListener('scroll', this.handleWindowScroll.bind(this));
+    }
+
+    handleScroll(event) {
+        const container = event.target;
+        const scrollTop = container.scrollTop;
+        const scrollHeight = container.scrollHeight;
+        const clientHeight = container.clientHeight;
+
+        if (scrollHeight - scrollTop - clientHeight < this.scrollThreshold) {
+            this.loadMoreRecords();
+        }
+    }
+
+    handleWindowScroll() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight;
+        const clientHeight = window.innerHeight;
+
+        if (scrollHeight - scrollTop - clientHeight < this.scrollThreshold) {
+            this.loadMoreRecords();
+        }
+    }
+
     // Data loading methods
     loadData() {
         this.isLoading = true;
         
         // Simulate API call with sample data
         setTimeout(() => {
-            this.data = this.generateSampleData();
-            this.totalRecords = this.data.length;
+            this.allData = this.generateSampleData();
             this.applyFiltersAndSort();
             this.isLoading = false;
         }, 1000);
+    }
+
+    loadMoreRecords() {
+        if (this.isLoadingMore || !this.hasMoreRecords || this.isLoading) {
+            return;
+        }
+
+        this.isLoadingMore = true;
+
+        // Simulate API call delay
+        setTimeout(() => {
+            const currentLength = this.displayedData.length;
+            const nextBatch = this.filteredData.slice(currentLength, currentLength + this.recordsPerPage);
+            
+            if (nextBatch.length > 0) {
+                this.displayedData = [...this.displayedData, ...nextBatch];
+                this.displayedRecords = this.displayedData.length;
+                this.hasMoreRecords = this.displayedData.length < this.filteredData.length;
+            }
+
+            this.isLoadingMore = false;
+        }, 500);
     }
 
     generateSampleData() {
@@ -136,7 +194,11 @@ export default class ModernListView extends LightningElement {
             'Acme Corporation', 'Global Industries', 'Tech Solutions Inc', 'Innovative Systems',
             'Future Enterprises', 'Dynamic Solutions', 'Premier Services', 'Advanced Technologies',
             'Strategic Partners', 'Excellence Group', 'Visionary Corp', 'Progressive Solutions',
-            'Elite Services', 'Pinnacle Systems', 'Optimal Solutions', 'Superior Technologies'
+            'Elite Services', 'Pinnacle Systems', 'Optimal Solutions', 'Superior Technologies',
+            'NextGen Corp', 'Digital Dynamics', 'Smart Systems', 'Innovation Labs',
+            'TechForward Inc', 'Global Connect', 'Future Vision', 'Elite Technologies',
+            'Premier Solutions', 'Advanced Systems', 'Strategic Tech', 'Excellence Corp',
+            'Visionary Systems', 'Progressive Tech', 'Optimal Corp', 'Superior Solutions'
         ];
         
         const industries = ['Technology', 'Healthcare', 'Finance', 'Manufacturing', 'Retail', 'Education'];
@@ -184,7 +246,7 @@ export default class ModernListView extends LightningElement {
         const statusClasses = ['slds-theme_success', 'slds-theme_error', 'slds-theme_warning', 'slds-theme_info'];
 
         const sampleData = [];
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 50; i++) { // Increased for better infinite scroll demo
             const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
             const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
             const title = titles[Math.floor(Math.random() * titles.length)];
@@ -217,7 +279,9 @@ export default class ModernListView extends LightningElement {
         const opportunityNames = [
             'Sistema de CRM Empresarial', 'Implementação ERP', 'Consultoria Digital', 'Plataforma E-commerce',
             'Solução de BI', 'Migração para Cloud', 'Automação de Processos', 'Sistema de Gestão',
-            'Aplicativo Mobile', 'Integração de Sistemas', 'Modernização IT', 'Projeto de Analytics'
+            'Aplicativo Mobile', 'Integração de Sistemas', 'Modernização IT', 'Projeto de Analytics',
+            'Transformação Digital', 'Plataforma IoT', 'Sistema de Vendas', 'Portal do Cliente',
+            'Dashboard Executivo', 'Integração API', 'Sistema de Estoque', 'Plataforma de Dados'
         ];
         
         const stages = ['Prospecting', 'Qualification', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
@@ -257,7 +321,9 @@ export default class ModernListView extends LightningElement {
             'Sistema não carrega dados', 'Erro de login recorrente', 'Performance lenta na aplicação',
             'Falha na integração', 'Problema de sincronização', 'Bug no relatório mensal',
             'Usuário sem acesso', 'Erro 500 no servidor', 'Dados inconsistentes',
-            'Falha no backup automático', 'Interface não responsiva', 'Timeout na API'
+            'Falha no backup automático', 'Interface não responsiva', 'Timeout na API',
+            'Erro de validação', 'Problema de conectividade', 'Falha no deploy',
+            'Bug na interface', 'Erro de permissão', 'Problema de performance'
         ];
         
         const priorities = ['High', 'Medium', 'Low', 'Critical'];
@@ -294,7 +360,9 @@ export default class ModernListView extends LightningElement {
     generateLeadData() {
         const companies = [
             'StartupTech', 'InnovaCorp', 'TechStart', 'DigitalPro', 'CloudFirst',
-            'DataDriven', 'SmartSolutions', 'NextGen', 'FutureTech', 'AgileWorks'
+            'DataDriven', 'SmartSolutions', 'NextGen', 'FutureTech', 'AgileWorks',
+            'TechVision', 'DigitalEdge', 'CloudTech', 'DataSmart', 'InnovateLab',
+            'TechPioneer', 'DigitalFlow', 'CloudSync', 'DataCore', 'SmartEdge'
         ];
         
         const sources = ['Website', 'LinkedIn', 'Trade Show', 'Referral', 'Cold Call', 'Email Campaign'];
@@ -341,7 +409,7 @@ export default class ModernListView extends LightningElement {
 
     // Filter and sort methods
     applyFiltersAndSort() {
-        let filtered = [...this.data];
+        let filtered = [...this.allData];
 
         // Apply list view filter
         filtered = this.applyListViewFilter(filtered);
@@ -361,12 +429,14 @@ export default class ModernListView extends LightningElement {
             );
         }
 
+        this.filteredData = filtered;
         this.totalRecords = filtered.length;
         
-        // Apply pagination
-        const startIndex = (this.currentPage - 1) * this.recordsPerPage;
-        const endIndex = startIndex + this.recordsPerPage;
-        this.filteredData = filtered.slice(startIndex, endIndex);
+        // Reset displayed data for infinite scroll
+        const initialBatch = filtered.slice(0, this.recordsPerPage);
+        this.displayedData = initialBatch;
+        this.displayedRecords = initialBatch.length;
+        this.hasMoreRecords = this.displayedData.length < this.filteredData.length;
     }
 
     applyListViewFilter(data) {
@@ -417,13 +487,11 @@ export default class ModernListView extends LightningElement {
     // Event handlers
     handleSearch(event) {
         this.searchTerm = event.target.value;
-        this.currentPage = 1; // Reset to first page
         this.applyFiltersAndSort();
     }
 
     handleListViewChange(event) {
         this.selectedListView = event.detail.value;
-        this.currentPage = 1; // Reset to first page
         this.applyFiltersAndSort();
     }
 
@@ -479,20 +547,6 @@ export default class ModernListView extends LightningElement {
         // 4. Show success/error message
     }
 
-    handlePrevious() {
-        if (!this.isFirstPage) {
-            this.currentPage--;
-            this.applyFiltersAndSort();
-        }
-    }
-
-    handleNext() {
-        if (!this.isLastPage) {
-            this.currentPage++;
-            this.applyFiltersAndSort();
-        }
-    }
-
     // Utility methods
     showToast(title, message, variant) {
         const event = new ShowToastEvent({
@@ -518,7 +572,6 @@ export default class ModernListView extends LightningElement {
     @api
     clearSearch() {
         this.searchTerm = '';
-        this.currentPage = 1;
         this.applyFiltersAndSort();
     }
 }

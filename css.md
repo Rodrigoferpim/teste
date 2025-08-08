@@ -1,5 +1,32 @@
 /* Modern List View Component Styles */
 
+/* Header Actions Styling */
+.slds-card__header .slds-grid {
+    align-items: center;
+    gap: 12px;
+}
+
+.slds-card__header lightning-input {
+    max-width: 300px;
+    min-width: 200px;
+}
+
+.slds-card__header lightning-combobox {
+    min-width: 200px;
+    max-width: 250px;
+}
+
+.slds-card__header lightning-button-icon {
+    --slds-c-button-radius: 4px;
+    border: 1px solid var(--lwc-colorBorder, #e5e5e5);
+    background-color: var(--lwc-colorBackgroundAlt, #fafaf9);
+}
+
+.slds-card__header lightning-button-icon:hover {
+    background-color: var(--lwc-colorBackgroundRowHover, #f3f3f3);
+    border-color: var(--lwc-colorBorderBrandPrimary, #0176d3);
+}
+
 /* Container Styles */
 .modern-list-container {
     background: var(--lwc-colorBackgroundAlt, #fafaf9);
@@ -135,24 +162,6 @@
     opacity: 1;
 }
 
-/* Search and Filter Section */
-.slds-card__body .slds-grid.slds-gutters.slds-m-bottom_medium {
-    background: var(--lwc-colorBackgroundAlt, #fafaf9);
-    padding: 16px;
-    border-radius: 8px;
-    margin-bottom: 20px !important;
-    border: 1px solid var(--lwc-colorBorder, #e5e5e5);
-}
-
-/* Search Input Enhancements */
-.slds-card__body lightning-input {
-    --slds-c-input-radius: 8px;
-}
-
-.slds-card__body lightning-combobox {
-    --slds-c-combobox-radius: 8px;
-}
-
 /* Loading State */
 .slds-align_absolute-center {
     padding: 40px 0;
@@ -217,6 +226,25 @@ lightning-button:hover {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    .slds-card__header .slds-grid {
+        display: block;
+    }
+    
+    .slds-card__header .slds-col {
+        margin-bottom: 12px;
+        width: 100%;
+    }
+    
+    .slds-card__header lightning-input,
+    .slds-card__header lightning-combobox {
+        width: 100%;
+        max-width: none;
+    }
+    
+    .slds-card__header .slds-text-align_right {
+        text-align: left !important;
+    }
+    
     .modern-list-item {
         padding: 12px;
         margin-bottom: 8px;
@@ -233,15 +261,6 @@ lightning-button:hover {
     .modern-list-item .slds-col.slds-no-flex {
         display: flex;
         justify-content: center;
-        margin-bottom: 12px;
-    }
-    
-    .slds-card__body .slds-grid.slds-gutters.slds-m-bottom_medium {
-        display: block;
-        padding: 12px;
-    }
-    
-    .slds-card__body .slds-col {
         margin-bottom: 12px;
     }
     
@@ -271,6 +290,10 @@ lightning-button:hover {
     
     lightning-card {
         --slds-c-card-header-padding: 16px;
+    }
+    
+    .slds-card__header lightning-button-icon {
+        margin: 4px 2px;
     }
 }
 
